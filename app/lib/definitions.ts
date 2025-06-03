@@ -9,6 +9,16 @@ export type User = {
   password: string;
 };
 
+export type Product = {
+  id: string;
+  product_name: string;
+  price: number;
+  stock: number;
+  description: string;
+  image: string;
+  sales: number;
+};
+
 export type Customer = {
   id: string;
   name: string;
@@ -19,6 +29,7 @@ export type Customer = {
 export type Invoice = {
   id: string;
   customer_id: string;
+  product_id: string;
   amount: number;
   date: string;
   // In TypeScript, this is called a string union type.
@@ -34,6 +45,7 @@ export type Revenue = {
 export type LatestInvoice = {
   id: string;
   name: string;
+  product_name: string;
   image_url: string;
   email: string;
   amount: string;
@@ -48,6 +60,8 @@ export type InvoicesTable = {
   id: string;
   customer_id: string;
   name: string;
+  product_id: string;
+  product_name: string;
   email: string;
   image_url: string;
   date: string;
@@ -83,6 +97,53 @@ export type CustomerField = {
 export type InvoiceForm = {
   id: string;
   customer_id: string;
+  product_id: string;
   amount: number;
   status: 'pending' | 'paid';
+};
+
+export type ProductsTable = {
+  id: string;
+  product_name: string;
+  price: number;
+  stock: number;
+  description: string;
+  image: string;
+  sales: number;
+};
+
+export type ProductField = {
+  id: string;
+  product_name: string;
+};
+
+export type ProductForm = {
+  id: string;
+  product_name: string;
+  price: number;
+  stock: number;
+  description: string;
+  image: string;
+};
+
+export type FormattedProductsTable = {
+  id: string;
+  product_name: string;
+  price: string;
+  stock: number;
+  description: string;
+  image: string;
+  sales: number;
+};
+
+export type TopSellingProduct = {
+  id: string;
+  product_name: string;
+  image: string;
+  sales: number;
+  revenue: string;
+};
+
+export type TopSellingProductRaw = Omit<TopSellingProduct, 'revenue'> & {
+  revenue: number;
 };
