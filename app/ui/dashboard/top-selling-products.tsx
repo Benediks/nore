@@ -2,24 +2,21 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import Image from 'next/image';
 import { fredoka } from '@/app/ui/fonts';
-// import { LatestInvoice } from '@/app/lib/definitions';
-import { fetchLatestInvoices } from '@/app/lib/data';
+import { fetchTopSellingProducts } from '@/app/lib/data';
 
-export default async function LatestInvoices(){
-  const latestInvoices = await fetchLatestInvoices();
+export default async function TopSellingProducts(){
+  const topSellingProducts = await fetchTopSellingProducts();
   return (
     <div className="flex w-full flex-col md:col-span-4">
       <h2 className={`${fredoka.className} mb-4 text-xl md:text-2xl`}>
-        Latest Invoices
+        Top Selling Products
       </h2>
       <div className="flex grow flex-col justify-between rounded-xl bg-gray-50 p-4">
-        {/* NOTE: Uncomment this code in Chapter 7 */}
-
         <div className="bg-white px-6">
-          {latestInvoices.map((invoice, i) => {
+          {topSellingProducts.map((product, i) => {
             return (
               <div
-                key={invoice.id}
+                key={product.id}
                 className={clsx(
                   'flex flex-row items-center justify-between py-4',
                   {
@@ -29,25 +26,25 @@ export default async function LatestInvoices(){
               >
                 <div className="flex items-center">
                   <Image
-                    src={invoice.image_url}
-                    alt={`${invoice.name}'s profile picture`}
-                    className="mr-4 rounded-full"
+                    src={product.image}
+                    alt={`${product.product_name} product image`}
+                    className="mr-4 rounded-md"
                     width={32}
                     height={32}
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold md:text-base">
-                      {invoice.name}
+                      {product.product_name}
                     </p>
                     <p className="hidden text-sm text-gray-500 sm:block">
-                      {invoice.email}
+                      {product.sales} units sold
                     </p>
                   </div>
                 </div>
                 <p
                   className={`${fredoka.className} truncate text-sm font-medium md:text-base`}
                 >
-                  {invoice.amount}
+                  {product.revenue}
                 </p>
               </div>
             );

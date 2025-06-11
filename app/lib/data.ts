@@ -8,6 +8,7 @@ import {
   Revenue,
   ProductField,
   ProductsTable,
+  ProductForm,
   TopSellingProductRaw,
 } from './definitions';
 import { formatCurrency } from './utils';
@@ -36,16 +37,9 @@ export async function fetchRevenue() {
 export async function fetchLatestInvoices() {
   try {
     const data = await sql<LatestInvoiceRaw[]>`
-      SELECT 
-        invoices.amount, 
-        customers.name, 
-        customers.image_url, 
-        customers.email, 
-        invoices.id,
-        products.product_name
+      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
       FROM invoices
       JOIN customers ON invoices.customer_id = customers.id
-      JOIN products ON invoices.product_id = products.id
       ORDER BY invoices.date DESC
       LIMIT 5`;
 
@@ -60,13 +54,36 @@ export async function fetchLatestInvoices() {
   }
 }
 
+export async function fetchTopSellingProducts() {
+  try {
+    const data = await sql<TopSellingProductRaw[]>`
+      SELECT 
+        products.id,
+        products.product_name,
+        products.image,
+        products.sales,
+        (products.price * products.sales) as revenue
+      FROM products
+      ORDER BY products.sales DESC
+      LIMIT 5`;
+
+    const topProducts = data.map((product) => ({
+      ...product,
+      revenue: formatCurrency(product.revenue),
+    }));
+    return topProducts;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch top selling products.');
+  }
+}
+
 export async function fetchCardData() {
   try {
     // You can probably combine these into a single SQL query
     // However, we are intentionally splitting them to demonstrate
     // how to initialize multiple queries in parallel with JS.
     const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
     const productCountPromise = sql`SELECT COUNT(*) FROM products`;
     const invoiceStatusPromise = sql`SELECT
          SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
@@ -75,21 +92,18 @@ export async function fetchCardData() {
 
     const data = await Promise.all([
       invoiceCountPromise,
-      customerCountPromise,
       productCountPromise,
       invoiceStatusPromise,
     ]);
 
     const numberOfInvoices = Number(data[0][0].count ?? '0');
-    const numberOfCustomers = Number(data[1][0].count ?? '0');
-    const numberOfProducts = Number(data[2][0].count ?? '0');
-    const totalPaidInvoices = formatCurrency(data[3][0].paid ?? '0');
-    const totalPendingInvoices = formatCurrency(data[3][0].pending ?? '0');
+    const numberOfProducts = Number(data[1][0].count ?? '0');
+    const totalPaidInvoices = formatCurrency(data[2][0].paid ?? '0');
+    const totalPendingInvoices = formatCurrency(data[2][0].pending ?? '0');
 
     return {
-      numberOfCustomers,
-      numberOfInvoices,
       numberOfProducts,
+      numberOfInvoices,
       totalPaidInvoices,
       totalPendingInvoices,
     };
@@ -100,6 +114,7 @@ export async function fetchCardData() {
 }
 
 const ITEMS_PER_PAGE = 6;
+
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
@@ -121,7 +136,7 @@ export async function fetchFilteredInvoices(
         products.product_name
       FROM invoices
       JOIN customers ON invoices.customer_id = customers.id
-      JOIN products ON invoices.product_id = products.id
+      LEFT JOIN products ON invoices.product_id = products.id
       WHERE
         customers.name ILIKE ${`%${query}%`} OR
         customers.email ILIKE ${`%${query}%`} OR
@@ -145,7 +160,7 @@ export async function fetchInvoicesPages(query: string) {
     const data = await sql`SELECT COUNT(*)
     FROM invoices
     JOIN customers ON invoices.customer_id = customers.id
-    JOIN products ON invoices.product_id = products.id
+    LEFT JOIN products ON invoices.product_id = products.id
     WHERE
       customers.name ILIKE ${`%${query}%`} OR
       customers.email ILIKE ${`%${query}%`} OR
@@ -189,20 +204,76 @@ export async function fetchInvoiceById(id: string) {
   }
 }
 
-export async function fetchCustomers() {
+export async function fetchFilteredProducts(
+  query: string,
+  currentPage: number,
+) {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
   try {
-    const customers = await sql<CustomerField[]>`
+    const products = await sql<ProductsTable[]>`
       SELECT
         id,
-        name
-      FROM customers
-      ORDER BY name ASC
+        product_name,
+        price,
+        stock,
+        description,
+        image,
+        sales
+      FROM products
+      WHERE
+        product_name ILIKE ${`%${query}%`} OR
+        description ILIKE ${`%${query}%`} OR
+        price::text ILIKE ${`%${query}%`} OR
+        stock::text ILIKE ${`%${query}%`}
+      ORDER BY product_name ASC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
-    return customers;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch all customers.');
+    return products;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch products.');
+  }
+}
+
+export async function fetchProductsPages(query: string) {
+  try {
+    const data = await sql`SELECT COUNT(*)
+    FROM products
+    WHERE
+      product_name ILIKE ${`%${query}%`} OR
+      description ILIKE ${`%${query}%`} OR
+      price::text ILIKE ${`%${query}%`} OR
+      stock::text ILIKE ${`%${query}%`}
+  `;
+
+    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch total number of products.');
+  }
+}
+
+export async function fetchProductById(id: string) {
+  try {
+    const data = await sql<ProductForm[]>`
+      SELECT
+        id,
+        product_name,
+        price,
+        stock,
+        description,
+        image
+      FROM products
+      WHERE id = ${id};
+    `;
+
+    return data[0];
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch product.');
   }
 }
 
@@ -220,6 +291,23 @@ export async function fetchProducts() {
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch all products.');
+  }
+}
+
+export async function fetchCustomers() {
+  try {
+    const customers = await sql<CustomerField[]>`
+      SELECT
+        id,
+        name
+      FROM customers
+      ORDER BY name ASC
+    `;
+
+    return customers;
+  } catch (err) {
+    console.error('Database Error:', err);
+    throw new Error('Failed to fetch all customers.');
   }
 }
 
@@ -253,57 +341,5 @@ export async function fetchFilteredCustomers(query: string) {
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');
-  }
-}
-
-export async function fetchFilteredProducts(query: string) {
-  try {
-    const data = await sql<ProductsTable[]>`
-		SELECT
-		  id,
-		  product_name,
-		  price,
-		  stock,
-		  description,
-		  image,
-		  sales
-		FROM products
-		WHERE
-		  product_name ILIKE ${`%${query}%`} OR
-      description ILIKE ${`%${query}%`}
-		ORDER BY product_name ASC
-	  `;
-
-    return data;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch products table.');
-  }
-}
-
-export async function fetchTopSellingProducts() {
-  try {
-    const data = await sql<TopSellingProductRaw[]>`
-      SELECT 
-        id,
-        product_name,
-        image,
-        sales,
-        (price * sales) as revenue
-      FROM products
-      WHERE sales > 0
-      ORDER BY sales DESC
-      LIMIT 5
-    `;
-
-    const topProducts = data.map((product) => ({
-      ...product,
-      revenue: formatCurrency(product.revenue),
-    }));
-
-    return topProducts;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch top selling products.');
   }
 }

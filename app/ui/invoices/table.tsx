@@ -39,6 +39,10 @@ export default async function InvoicesTable({
                   </div>
                   <InvoiceStatus status={invoice.status} />
                 </div>
+                <div className="mb-2">
+                  <p className="text-sm font-medium text-gray-700">Product:</p>
+                  <p className="text-sm text-gray-900">{invoice.product_name || 'N/A'}</p>
+                </div>
                 <div className="flex w-full items-center justify-between pt-4">
                   <div>
                     <p className="text-xl font-medium">
@@ -62,6 +66,9 @@ export default async function InvoicesTable({
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   Email
+                </th>
+                <th scope="col" className="px-3 py-5 font-medium">
+                  Product
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   Amount
@@ -97,6 +104,9 @@ export default async function InvoicesTable({
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {invoice.email}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    {invoice.product_name || 'N/A'}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {formatCurrency(invoice.amount)}
