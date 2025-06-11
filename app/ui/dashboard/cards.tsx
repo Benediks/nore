@@ -50,17 +50,21 @@ export function Card({
   const Icon = iconMap[type];
 
   return (
-    <div className="rounded-xl bg-gray-50 p-2 shadow-sm">
-      <div className="flex p-4">
-        {Icon ? <Icon className="h-5 w-5 text-gray-700" /> : null}
-        <h3 className="ml-2 text-sm font-medium">{title}</h3>
+    <div className="rounded-xl bg-white p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-5000">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          {Icon ? <Icon className="h-6 w-6 text-blue-600" /> : null}
+          <h3 className="ml-3 text-sm text-gray-700 uppercase tracking-wide">{title}</h3>
+        </div>
       </div>
-      <p
-        className={`${fredoka.className}
-          truncate rounded-xl bg-white px-4 py-8 text-center text-2xl`}
-      >
-        {value}
-      </p>
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+        <p
+          className={`${fredoka.className}
+            text-3xl text-gray-900 text-center`}
+        >
+          {value}
+        </p>
+      </div>
     </div>
   );
 }

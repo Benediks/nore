@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" }); 
 
 import { z } from "zod";
@@ -131,4 +133,23 @@ export async function updateProduct(id: string, formData: FormData) {
 export async function deleteProduct(id: string) {
   await sql`DELETE FROM products WHERE id = ${id}`;
   revalidatePath("/dashboard/products");
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
 }
