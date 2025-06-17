@@ -10,6 +10,9 @@ Link GitHub : https://github.com/Benediks/nore
 
 Link deploy : https://nore-three.vercel.app/
 
+Username: user@nextmail.com
+Password: 123456
+
 Bagian yang sudah dikerjakan tiap anggota:
 
 Acharius maximilanus sumeisey 231712359
